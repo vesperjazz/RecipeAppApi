@@ -1,5 +1,6 @@
 using Lambdas.Recipe.Services;
 using BuildingBlocks.Observability;
+using Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,9 @@ builder.Configuration
 
 // Add AWS Lambda hosting for REST API Gateway
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
+
+// Add database context
+builder.Services.AddDatabase(builder.Configuration);
 
 // Register services with dependency injection
 builder.Services.AddScoped<IRecipeService, RecipeService>();

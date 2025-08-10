@@ -30,6 +30,9 @@ public class Function
             {
                 // Register services with dependency injection
                 services.AddScoped<ITokenValidator, TokenValidatorService>();
+                
+                // Add database context
+                services.AddAuthorizerDatabase(context.Configuration);
             })
             .Build();
 
@@ -48,6 +51,9 @@ public class Function
             .ConfigureServices((context, services) =>
             {
                 services.AddScoped<ITokenValidator, TokenValidatorService>();
+                
+                // Add database context
+                services.AddAuthorizerDatabase(context.Configuration);
             })
             .Build();
 
