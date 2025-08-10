@@ -7,6 +7,9 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables(); // Environment variables override JSON settings
 
+// Add AWS Lambda hosting for REST API Gateway
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
+
 var app = builder.Build();
 
 // Get the configurable welcome message from configuration
