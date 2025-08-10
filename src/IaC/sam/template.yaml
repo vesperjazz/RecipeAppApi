@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: RecipeAppApi Lambda Functions
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Environment name
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: dotnet8
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        ASPNETCORE_ENVIRONMENT: !Ref Environment
+
+Resources:
+  RecipeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-recipe-function'
+      CodeUri: ../../Lambdas/Recipe/
+      Handler: Lambdas.Recipe::Lambdas.Recipe.LambdaEntryPoint::FunctionHandlerAsync
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+  AuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-authorizer-function'
+      CodeUri: ../../Lambdas/Authorizer/
+      Handler: Lambdas.Authorizer::Lambdas.Authorizer.Function::FunctionHandler
+
+Outputs:
+  RecipeFunctionArn:
+    Description: ARN of the Recipe Lambda Function
+    Value: !GetAtt RecipeFunction.Arn
+    Export:
+      Name: !Sub '${Environment}-RecipeFunctionArn'
+  
+  AuthorizerFunctionArn:
+    Description: ARN of the Authorizer Lambda Function
+    Value: !GetAtt AuthorizerFunction.Arn
+    Export:
+      Name: !Sub '${Environment}-AuthorizerFunctionArn'
