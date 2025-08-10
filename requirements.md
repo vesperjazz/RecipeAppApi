@@ -15,13 +15,18 @@
    - Configure `Lambdas.Authorizer` to handle API Gateway request events
      and return authorization responses accordingly.
 
-4. **Logging**
+4. **Dependency Injection** 
+   - Setup dependency injection for both `Lambdas.Recipe` and `Lambdas.Authorizer`.
+   - For Lambdas.Authorizer, inject a dummy ITokenValidator and TokenValidatorService with appropriate lifecycle.
+   - For Lambdas.Recipe, inject a dummy IRecipeService and RecipeService with appropriate lifecycle.
+
+5. **Logging**
    - Add Serilog with Console sink to both `Lambdas.Recipe` and `Lambdas.Authorizer`.
    - Use structured logging and enrichers as needed.
 
-5. **Swagger**
+6. **Swagger**
    - Integrate Swagger/OpenAPI in `Lambdas.Recipe` for local development documentation.
 
-6. **Database Context**
+7. **Database Context**
    - Add an empty EF Core `DbContext` class.
    - Configure MySQL as the EF Core provider with connection string from configuration.
