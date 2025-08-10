@@ -9,6 +9,9 @@ builder.Configuration
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+// Get the configurable welcome message from configuration
+var welcomeMessage = builder.Configuration["AppSettings:WelcomeMessage"];
+
+app.MapGet("/", () => welcomeMessage);
 
 app.Run();
