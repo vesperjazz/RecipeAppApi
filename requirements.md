@@ -29,5 +29,6 @@
    - Integrate Swagger/OpenAPI in `Lambdas.Recipe` and `Lambdas.User` for local development documentation.
 
 7. **Database Context**
-   - Add empty EF Core `DbContext` classes to all 3 lambdas.
+   - Add an empty EF Core `DbContext` class to `Infrastructure.Persistence`.
    - Configure MySQL as the EF Core provider with connection string from configuration. 
+   - Each lambda should have a database configuration class that refers to this `DbContext` and wired in the configuration pipeline.
