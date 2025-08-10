@@ -1,6 +1,10 @@
 using Lambdas.Recipe.Services;
+using BuildingBlocks.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog for structured logging
+builder.Host.ConfigureSerilog(builder.Configuration);
 
 // Configure configuration to load from appsettings.json and environment variables
 builder.Configuration
@@ -23,9 +27,10 @@ var welcomeMessage = builder.Configuration["AppSettings:WelcomeMessage"];
 app.MapGet("/", () => welcomeMessage);
 
 // Add new endpoints that use the injected service
-app.MapGet("/recipes", async (IRecipeService recipeService) =>
+app.MapGet("/recipes", async (IRecipeService recipeService, ILogger<Program> logger) =>
 {
     var recipes = await recipeService.GetRecipeNamesAsync();
+    logger.LogInformation("Hey, here's some logging!");
     return Results.Ok(recipes);
 });
 
