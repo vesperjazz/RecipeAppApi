@@ -2,6 +2,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Infrastructure.Persistence;
 
 namespace Lambdas.Authorizer;
 
@@ -22,14 +23,14 @@ public static class AuthorizerDatabaseConfiguration
         if (string.IsNullOrEmpty(connectionString))
         {
             // Use in-memory database when no connection string is provided
-            services.AddDbContext<AuthorizerDbContext>(options =>
+            services.AddDbContext<RecipeAppDbContext>(options =>
             {
-                options.UseInMemoryDatabase("AuthorizerAppInMemory");
+                options.UseInMemoryDatabase("RecipeAppInMemory");
             });
         }
         else
         {
-            services.AddDbContext<AuthorizerDbContext>(options =>
+            services.AddDbContext<RecipeAppDbContext>(options =>
             {
                 options.UseMySql(
                     connectionString,

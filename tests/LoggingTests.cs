@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Lambdas.Recipe;
 using Lambdas.Authorizer;
+using Infrastructure.Persistence;
 
 namespace RecipeAppApi.Tests;
 
@@ -25,7 +26,7 @@ public class LoggingTests
         services.AddDatabase(configuration);
         
         var serviceProvider = services.BuildServiceProvider();
-        var recipeDbContext = serviceProvider.GetService<RecipeDbContext>();
+        var recipeDbContext = serviceProvider.GetService<RecipeAppDbContext>();
         
         Assert.NotNull(recipeDbContext);
     }
@@ -40,7 +41,7 @@ public class LoggingTests
         services.AddAuthorizerDatabase(configuration);
         
         var serviceProvider = services.BuildServiceProvider();
-        var authorizerDbContext = serviceProvider.GetService<AuthorizerDbContext>();
+        var authorizerDbContext = serviceProvider.GetService<RecipeAppDbContext>();
         
         Assert.NotNull(authorizerDbContext);
     }

@@ -2,6 +2,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Infrastructure.Persistence;
 
 namespace Lambdas.Users;
 
@@ -16,14 +17,14 @@ public static class DatabaseConfiguration
         if (string.IsNullOrEmpty(connectionString))
         {
             // Use in-memory database when no connection string is provided
-            services.AddDbContext<UserDbContext>(options =>
+            services.AddDbContext<RecipeAppDbContext>(options =>
             {
-                options.UseInMemoryDatabase("UsersAppInMemory");
+                options.UseInMemoryDatabase("RecipeAppInMemory");
             });
         }
         else
         {
-            services.AddDbContext<UserDbContext>(options =>
+            services.AddDbContext<RecipeAppDbContext>(options =>
             {
                 options.UseMySql(
                     connectionString,
