@@ -1,7 +1,7 @@
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Infrastructure.Persistence;
+using Lambdas.Recipe;
 using Lambdas.Authorizer;
 
 namespace RecipeAppApi.Tests;

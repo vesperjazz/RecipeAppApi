@@ -3,33 +3,27 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Lambdas.Authorizer;
+namespace Lambdas.Recipe;
 
-public static class AuthorizerDatabaseConfiguration
+public static class DatabaseConfiguration
 {
-    public static IServiceCollection AddAuthorizerDatabase(
+    public static IServiceCollection AddDatabase(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("AuthorizerConnection");
-        
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            // Fallback to default connection if authorizer-specific connection is not configured
-            connectionString = configuration.GetConnectionString("DefaultConnection");
-        }
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
         
         if (string.IsNullOrEmpty(connectionString))
         {
             // Use in-memory database when no connection string is provided
-            services.AddDbContext<AuthorizerDbContext>(options =>
+            services.AddDbContext<RecipeDbContext>(options =>
             {
-                options.UseInMemoryDatabase("AuthorizerAppInMemory");
+                options.UseInMemoryDatabase("RecipeAppInMemory");
             });
         }
         else
         {
-            services.AddDbContext<AuthorizerDbContext>(options =>
+            services.AddDbContext<RecipeDbContext>(options =>
             {
                 options.UseMySql(
                     connectionString,

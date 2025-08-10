@@ -7,9 +7,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Amazon.Lambda.AspNetCoreServer.Hosting;
-using Lambdas.Recipe.Services;
+using Lambdas.Users.Services;
 using BuildingBlocks.Observability;
-using Lambdas.Recipe;
+using Lambdas.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,13 +30,13 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
 builder.Services.AddDatabase(builder.Configuration);
 
 // Register services with dependency injection
-builder.Services.AddScoped<IRecipeService, RecipeService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Add Swagger/OpenAPI for local development documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "Recipe API", Version = "v1" });
+    c.SwaggerDoc("v1", new() { Title = "Users API", Version = "v1" });
     
     // Include XML comments if they exist
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -55,7 +55,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Recipe API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Users API v1");
         c.RoutePrefix = "swagger";
     });
 }
@@ -69,23 +69,23 @@ app.MapGet("/", () => welcomeMessage)
    .WithDescription("Returns the configured welcome message from appsettings");
 
 // Add new endpoints that use the injected service
-app.MapGet("/recipes", async (IRecipeService recipeService, ILogger<Program> logger) =>
+app.MapGet("/users", async (IUserService userService, ILogger<Program> logger) =>
 {
-    var recipes = await recipeService.GetRecipeNamesAsync();
+    var users = await userService.GetUserNamesAsync();
     logger.LogInformation("Hey, here's some logging!");
-    return Results.Ok(recipes);
+    return Results.Ok(users);
 })
-.WithName("GetRecipes")
-.WithSummary("Gets all recipe names")
-.WithDescription("Returns a list of recipe names from the recipe service");
+.WithName("GetUsers")
+.WithSummary("Gets all user names")
+.WithDescription("Returns a list of user names from the user service");
 
-app.MapGet("/welcome", async (IRecipeService recipeService) =>
+app.MapGet("/welcome", async (IUserService userService) =>
 {
-    var message = await recipeService.GetWelcomeMessageAsync();
+    var message = await userService.GetWelcomeMessageAsync();
     return Results.Ok(new { message });
 })
 .WithName("GetServiceWelcome")
-.WithSummary("Gets a welcome message from the recipe service")
-.WithDescription("Returns a welcome message from the injected recipe service");
+.WithSummary("Gets a welcome message from the user service")
+.WithDescription("Returns a welcome message from the injected user service");
 
 app.Run();
