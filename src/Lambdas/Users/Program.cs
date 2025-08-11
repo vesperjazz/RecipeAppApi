@@ -10,6 +10,7 @@ using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Lambdas.Users.Services;
 using BuildingBlocks.Observability;
 using Lambdas.Users;
+using Lambdas.Users.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,7 @@ builder.Services.AddDatabase(builder.Configuration);
 
 // Register services with dependency injection
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
 
 // Add Swagger/OpenAPI for local development documentation
 builder.Services.AddEndpointsApiExplorer();
@@ -87,5 +89,49 @@ app.MapGet("/welcome", async (IUserService userService) =>
 .WithName("GetServiceWelcome")
 .WithSummary("Gets a welcome message from the user service")
 .WithDescription("Returns a welcome message from the injected user service");
+
+// Sign Up endpoint
+app.MapPost("/auth/signup", async (SignUpRequest request, IUserService userService, ILogger<Program> logger) =>
+{
+    try
+    {
+        logger.LogInformation("Sign up request received for username: {Username}", request.Username);
+        
+        var response = await userService.SignUpAsync(request);
+        
+        logger.LogInformation("User successfully registered with ID: {UserId}", response.Id);
+        
+        return Results.Created($"/users/{response.Id}", response);
+    }
+    catch (InvalidOperationException ex)
+    {
+        logger.LogWarning("Sign up failed due to business rule violation: {Message}", ex.Message);
+        
+        var errorResponse = new ErrorResponse
+        {
+            Message = ex.Message,
+            Details = "The requested username or email is already taken."
+        };
+        
+        return Results.Conflict(errorResponse);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Unexpected error during sign up for username: {Username}", request.Username);
+        
+        return Results.Problem(
+            title: "Internal Server Error",
+            detail: "An unexpected error occurred during registration. Please try again later or contact support if the problem persists.",
+            statusCode: 500);
+    }
+})
+.WithName("SignUp")
+.WithSummary("Registers a new user")
+.WithDescription("Creates a new user account with the provided username, email, and password")
+.Accepts<SignUpRequest>("application/json")
+.Produces<SignUpResponse>(201)
+.Produces<ErrorResponse>(400)
+.Produces<ErrorResponse>(409)
+.Produces<ErrorResponse>(500);
 
 app.Run();

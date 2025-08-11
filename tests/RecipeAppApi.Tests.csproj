@@ -13,6 +13,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\BuildingBlocks\Observability\BuildingBlocks.Observability.csproj" />
+    <ProjectReference Include="..\src\Core\Domain\Core.Domain.csproj" />
+    <ProjectReference Include="..\src\Infrastructure\Persistence\Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\src\Lambdas\Users\Lambdas.Users.csproj" />
     <ProjectReference Include="..\src\Lambdas\Recipe\Lambdas.Recipe.csproj" />
     <ProjectReference Include="..\src\Lambdas\Authorizer\Lambdas.Authorizer.csproj" />
   </ItemGroup>
