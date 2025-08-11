@@ -17,17 +17,20 @@ public class UserService : IUserService
     private readonly ILogger<UserService> _logger;
     private readonly RecipeAppDbContext _dbContext;
     private readonly IPasswordService _passwordService;
+    private readonly IJwtService _jwtService;
 
     public UserService(
         IConfiguration configuration, 
         ILogger<UserService> logger,
         RecipeAppDbContext dbContext,
-        IPasswordService passwordService)
+        IPasswordService passwordService,
+        IJwtService jwtService)
     {
         _configuration = configuration;
         _logger = logger;
         _dbContext = dbContext;
         _passwordService = passwordService;
+        _jwtService = jwtService;
         _logger.LogInformation("UserService initialized");
     }
 
@@ -116,6 +119,64 @@ public class UserService : IUserService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred during sign up for user: {Username}", request.Username);
+            throw;
+        }
+    }
+
+    public async Task<SignInResponse> SignInAsync(SignInRequest request)
+    {
+        _logger.LogInformation("Starting sign in process for user: {Username}", request.Username);
+
+        try
+        {
+            // Find user by username
+            var user = await _dbContext.Users
+                .FirstOrDefaultAsync(u => u.Username == request.Username);
+            
+            if (user == null)
+            {
+                _logger.LogWarning("User not found during sign in: {Username}", request.Username);
+                throw new InvalidOperationException("Invalid username or password.");
+            }
+
+            // Validate password
+            var isPasswordValid = _jwtService.ValidatePasswordAsync(
+                request.Password, 
+                user.PasswordHash, 
+                user.PasswordSalt);
+            
+            if (!isPasswordValid)
+            {
+                _logger.LogWarning("Invalid password during sign in for user: {Username}", request.Username);
+                throw new InvalidOperationException("Invalid username or password.");
+            }
+
+            // Get user roles (for now, default to "User" role)
+            var roles = new[] { "User" };
+
+            // Generate access token
+            var accessToken = _jwtService.GenerateAccessTokenAsync(user, roles);
+
+            // Get token expiration from configuration
+            var expirationMinutes = int.TryParse(_configuration["Jwt:ExpirationMinutes"], out var exp) ? exp : 60;
+
+            _logger.LogInformation("User successfully signed in: {UserId}", user.Id);
+
+            return new SignInResponse
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                AccessToken = accessToken,
+                TokenType = "Bearer",
+                ExpiresIn = expirationMinutes * 60, // Convert to seconds
+                IssuedAt = DateTime.UtcNow,
+                Message = "User successfully signed in."
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred during sign in for user: {Username}", request.Username);
             throw;
         }
     }
