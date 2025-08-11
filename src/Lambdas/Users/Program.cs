@@ -32,7 +32,8 @@ builder.Services.AddDatabase(builder.Configuration);
 
 // Register services with dependency injection
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
+builder.Services.AddSingleton<IJwtService, JwtService>();
 
 // Add Swagger/OpenAPI for local development documentation
 builder.Services.AddEndpointsApiExplorer();
@@ -132,6 +133,49 @@ app.MapPost("/auth/signup", async (SignUpRequest request, IUserService userServi
 .Produces<SignUpResponse>(201)
 .Produces<ErrorResponse>(400)
 .Produces<ErrorResponse>(409)
+.Produces<ErrorResponse>(500);
+
+// Sign In endpoint
+app.MapPost("/auth/signin", async (SignInRequest request, IUserService userService, ILogger<Program> logger) =>
+{
+    try
+    {
+        logger.LogInformation("Sign in request received for username: {Username}", request.Username);
+        
+        var response = await userService.SignInAsync(request);
+        
+        logger.LogInformation("User successfully signed in with ID: {UserId}", response.Id);
+        
+        return Results.Ok(response);
+    }
+    catch (InvalidOperationException ex)
+    {
+        logger.LogWarning("Sign in failed due to invalid credentials: {Message}", ex.Message);
+        
+        var errorResponse = new ErrorResponse
+        {
+            Message = ex.Message,
+            Details = "The provided username or password is incorrect."
+        };
+        
+        return Results.Unauthorized();
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Unexpected error during sign in for username: {Username}", request.Username);
+        
+        return Results.Problem(
+            title: "Internal Server Error",
+            detail: "An unexpected error occurred during authentication. Please try again later or contact support if the problem persists.",
+            statusCode: 500);
+    }
+})
+.WithName("SignIn")
+.WithSummary("Authenticates a user")
+.WithDescription("Authenticates a user with the provided username and password, returning a JWT access token")
+.Accepts<SignInRequest>("application/json")
+.Produces<SignInResponse>(200)
+.Produces<ErrorResponse>(401)
 .Produces<ErrorResponse>(500);
 
 app.Run();

@@ -9,4 +9,5 @@ public interface IUserService
     Task<string> GetWelcomeMessageAsync();
     Task<IEnumerable<string>> GetUserNamesAsync();
     Task<SignUpResponse> SignUpAsync(SignUpRequest request);
+    Task<SignInResponse> SignInAsync(SignInRequest request);
 }

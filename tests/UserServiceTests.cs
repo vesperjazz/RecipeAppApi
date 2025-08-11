@@ -34,8 +34,9 @@ public class UserServiceTests : IDisposable
         _dbContext = new RecipeAppDbContext(options);
         
         _passwordService = Substitute.For<IPasswordService>();
+        var jwtService = Substitute.For<IJwtService>();
         
-        _userService = new UserService(_configuration, _logger, _dbContext, _passwordService);
+        _userService = new UserService(_configuration, _logger, _dbContext, _passwordService, jwtService);
         
         // Ensure database is created
         _dbContext.Database.EnsureCreated();
@@ -112,7 +113,7 @@ public class UserServiceTests : IDisposable
         Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal(request.Username, result.Username);
         Assert.Equal(request.Email, result.Email);
-        Assert.Equal("User successfully registered.", result.Message);
+        Assert.Equal("User successfully registered with 'User' role.", result.Message);
         
         // Verify user was actually saved to database
         var savedUser = await _dbContext.Users.FindAsync(result.Id);
@@ -121,6 +122,16 @@ public class UserServiceTests : IDisposable
         Assert.Equal(request.Email, savedUser.Email);
         Assert.Equal(passwordHash, savedUser.PasswordHash);
         Assert.Equal(passwordSalt, savedUser.PasswordSalt);
+        
+        // Verify UserRole was created and user is assigned "User" role
+        var userRole = await _dbContext.UserRoles
+            .FirstOrDefaultAsync(ur => ur.UserId == result.Id);
+        Assert.NotNull(userRole);
+        
+        var userRoleEntity = await _dbContext.UserRoles
+            .Include(ur => ur.Role)
+            .FirstAsync(ur => ur.UserId == result.Id);
+        Assert.Equal("User", userRoleEntity.Role.RoleName);
     }
 
     [Fact]
@@ -213,7 +224,8 @@ public class UserServiceTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         var failingContext = new RecipeAppDbContext(options);
-        var failingUserService = new UserService(_configuration, _logger, failingContext, _passwordService);
+        var jwtService = Substitute.For<IJwtService>();
+        var failingUserService = new UserService(_configuration, _logger, failingContext, _passwordService, jwtService);
         
         // Dispose the context to simulate a database connection failure
         failingContext.Dispose();
@@ -256,5 +268,55 @@ public class UserServiceTests : IDisposable
         Assert.Equal(passwordSalt, savedUser.PasswordSalt);
         Assert.True(savedUser.CreatedDate <= DateTime.UtcNow);
         Assert.True(savedUser.UpdatedDate <= DateTime.UtcNow);
+    }
+
+    [Fact]
+    public async Task SignInAsync_WithValidCredentials_RetrievesUserRolesFromDatabase()
+    {
+        // Arrange
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Username = "testuser",
+            Email = "test@example.com",
+            PasswordHash = "hashedPassword",
+            PasswordSalt = "passwordSalt",
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow
+        };
+        
+        // Add user to database
+        _dbContext.Users.Add(user);
+        
+        // Get the "User" role and create UserRole
+        var userRole = await _dbContext.Roles.FirstAsync(r => r.RoleName == "User");
+        var userRoleRecord = new UserRole
+        {
+            UserId = user.Id,
+            RoleId = userRole.Id
+        };
+        _dbContext.UserRoles.Add(userRoleRecord);
+        
+        await _dbContext.SaveChangesAsync();
+        
+        var request = new SignInRequest
+        {
+            Username = "testuser",
+            Password = "password123"
+        };
+        
+        _passwordService.VerifyPassword(request.Password, user.PasswordHash, user.PasswordSalt).Returns(true);
+
+        // Act
+        var result = await _userService.SignInAsync(request);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(user.Id, result.Id);
+        Assert.Equal(user.Username, result.Username);
+        Assert.Equal(user.Email, result.Email);
+        Assert.NotNull(result.AccessToken);
+        Assert.Equal("Bearer", result.TokenType);
+        Assert.Equal("User successfully signed in.", result.Message);
     }
 }

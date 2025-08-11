@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -101,11 +102,23 @@ public class UserService : IUserService
                 UpdatedDate = DateTime.UtcNow
             };
 
-            // Add user to database
+            // Get the default "User" role
+            var defaultRole = await _dbContext.Roles
+                .FirstAsync(r => r.RoleName == "User");
+
+            // Create UserRole record to assign the default role
+            var userRole = new UserRole
+            {
+                UserId = user.Id,
+                RoleId = defaultRole.Id
+            };
+
+            // Add user and user role to database
             _dbContext.Users.Add(user);
+            _dbContext.UserRoles.Add(userRole);
             await _dbContext.SaveChangesAsync();
 
-            _logger.LogInformation("User successfully created with ID: {UserId}", user.Id);
+            _logger.LogInformation("User successfully created with ID: {UserId} and assigned 'User' role", user.Id);
 
             return new SignUpResponse
             {
@@ -113,7 +126,7 @@ public class UserService : IUserService
                 Username = user.Username,
                 Email = user.Email,
                 CreatedDate = user.CreatedDate,
-                Message = "User successfully registered."
+                Message = "User successfully registered with 'User' role."
             };
         }
         catch (Exception ex)
@@ -140,7 +153,7 @@ public class UserService : IUserService
             }
 
             // Validate password
-            var isPasswordValid = _jwtService.ValidatePasswordAsync(
+            var isPasswordValid = _passwordService.VerifyPassword(
                 request.Password, 
                 user.PasswordHash, 
                 user.PasswordSalt);
@@ -151,8 +164,15 @@ public class UserService : IUserService
                 throw new InvalidOperationException("Invalid username or password.");
             }
 
-            // Get user roles (for now, default to "User" role)
-            var roles = new[] { "User" };
+            // Get user roles from database
+            var userRoles = await _dbContext.UserRoles
+                .Where(ur => ur.UserId == user.Id)
+                .Include(ur => ur.Role)
+                .Select(ur => ur.Role.RoleName)
+                .ToArrayAsync();
+
+            // If no roles found, default to "User" role (fallback)
+            var roles = userRoles.Length > 0 ? userRoles : new[] { "User" };
 
             // Generate access token
             var accessToken = _jwtService.GenerateAccessTokenAsync(user, roles);
