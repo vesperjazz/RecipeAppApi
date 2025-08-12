@@ -131,4 +131,73 @@ public class RecipeService : IRecipeService
             throw;
         }
     }
+
+    public async Task<SearchRecipeResponse> SearchRecipesAsync(SearchRecipeRequest request)
+    {
+        _logger.LogInformation("Searching recipes with text: {SearchText}, Page: {PageNumber}, Size: {PageSize}", 
+            request.SearchText, request.PageNumber, request.PageSize);
+
+        try
+        {
+            // Build the search query
+            var query = _dbContext.Recipes
+                .Include(r => r.CreatedByUser)
+                .Include(r => r.Ingredients)
+                .Include(r => r.Steps)
+                .Where(r => 
+                    r.Title.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    r.Description.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    r.Category.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    r.Ingredients.Any(i => i.Name.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase)) ||
+                    r.Steps.Any(s => s.InstructionText.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase))
+                );
+
+            // Get total count for pagination
+            var totalCount = await query.CountAsync();
+            
+            // Calculate pagination
+            var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
+            var hasNextPage = request.PageNumber < totalPages;
+            var hasPreviousPage = request.PageNumber > 1;
+
+            // Apply pagination and get results
+            var recipes = await query
+                .OrderByDescending(r => r.CreatedAt)
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .Select(r => new RecipeSearchResult
+                {
+                    Id = r.Id,
+                    Title = r.Title,
+                    Description = r.Description,
+                    Category = r.Category,
+                    PhotoUrl = r.PhotoUrl,
+                    IsFavorite = r.IsFavorite,
+                    CreatedAt = r.CreatedAt,
+                    CreatedByUserName = r.CreatedByUser != null ? r.CreatedByUser.Username : "Unknown",
+                    IngredientCount = r.Ingredients.Count,
+                    StepCount = r.Steps.Count
+                })
+                .ToListAsync();
+
+            _logger.LogInformation("Search completed. Found {TotalCount} recipes, returning {ResultCount} for page {PageNumber}", 
+                totalCount, recipes.Count, request.PageNumber);
+
+            return new SearchRecipeResponse
+            {
+                Recipes = recipes,
+                TotalCount = totalCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize,
+                TotalPages = totalPages,
+                HasNextPage = hasNextPage,
+                HasPreviousPage = hasPreviousPage
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching recipes with text: {SearchText}", request.SearchText);
+            throw;
+        }
+    }
 }

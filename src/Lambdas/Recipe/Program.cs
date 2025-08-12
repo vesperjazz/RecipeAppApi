@@ -115,4 +115,27 @@ app.MapPost("/recipes", async (CreateRecipeRequest request, IRecipeService recip
 .Produces<CreateRecipeResponse>(201)
 .ProducesProblem(500);
 
+app.MapPost("/recipes/search", async (SearchRecipeRequest request, IRecipeService recipeService, ILogger<Program> logger) =>
+{
+    try
+    {
+        var searchResults = await recipeService.SearchRecipesAsync(request);
+        
+        logger.LogInformation("Recipe search completed successfully. Found {TotalCount} recipes", searchResults.TotalCount);
+        
+        return Results.Ok(searchResults);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error searching recipes");
+        return Results.Problem("An error occurred while searching recipes", statusCode: 500);
+    }
+})
+.WithName("SearchRecipes")
+.WithSummary("Searches recipes by text")
+.WithDescription("Searches recipes by text in title, description, category, ingredients, and steps with pagination support")
+.Accepts<SearchRecipeRequest>("application/json")
+.Produces<SearchRecipeResponse>(200)
+.ProducesProblem(500);
+
 app.Run();

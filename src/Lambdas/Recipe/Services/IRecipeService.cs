@@ -10,4 +10,5 @@ public interface IRecipeService
     Task<string> GetWelcomeMessageAsync();
     Task<IEnumerable<string>> GetRecipeNamesAsync();
     Task<CreateRecipeResponse> CreateRecipeAsync(CreateRecipeRequest request, Guid createdByUserId);
+    Task<SearchRecipeResponse> SearchRecipesAsync(SearchRecipeRequest request);
 }
