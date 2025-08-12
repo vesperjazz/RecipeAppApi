@@ -12,4 +12,5 @@ public class User
     
     // Navigation properties
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    public virtual ICollection<Recipe> Recipes { get; set; } = new List<Recipe>();
 }
