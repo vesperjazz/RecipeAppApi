@@ -3,20 +3,7 @@ using Core.Domain.Entities;
 
 namespace Infrastructure.Persistence;
 
-public interface IRecipeAppDbContext
-{
-    DbSet<User> Users { get; set; }
-    DbSet<Role> Roles { get; set; }
-    DbSet<UserRole> UserRoles { get; set; }
-    DbSet<Recipe> Recipes { get; set; }
-    DbSet<Ingredient> Ingredients { get; set; }
-    DbSet<Step> Steps { get; set; }
-    
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-    int SaveChanges();
-}
-
-public class RecipeAppDbContext : DbContext, IRecipeAppDbContext
+public class RecipeAppDbContext : DbContext
 {
     public RecipeAppDbContext(DbContextOptions<RecipeAppDbContext> options) : base(options)
     {

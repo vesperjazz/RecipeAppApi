@@ -10,6 +10,7 @@ using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Lambdas.Recipe.Services;
 using BuildingBlocks.Observability;
 using Lambdas.Recipe;
+using Lambdas.Recipe.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,5 +88,31 @@ app.MapGet("/welcome", async (IRecipeService recipeService) =>
 .WithName("GetServiceWelcome")
 .WithSummary("Gets a welcome message from the recipe service")
 .WithDescription("Returns a welcome message from the injected recipe service");
+
+app.MapPost("/recipes", async (CreateRecipeRequest request, IRecipeService recipeService, ILogger<Program> logger, HttpContext httpContext) =>
+{
+    try
+    {
+        // For now, we'll use a hardcoded user ID. In a real application, this would come from authentication
+        var createdByUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        
+        var createdRecipe = await recipeService.CreateRecipeAsync(request, createdByUserId);
+        
+        logger.LogInformation("Recipe created successfully: {RecipeId}", createdRecipe.Id);
+        
+        return Results.Created($"/recipes/{createdRecipe.Id}", createdRecipe);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error creating recipe");
+        return Results.Problem("An error occurred while creating the recipe", statusCode: 500);
+    }
+})
+.WithName("CreateRecipe")
+.WithSummary("Creates a new recipe")
+.WithDescription("Creates a new recipe with ingredients and steps")
+.Accepts<CreateRecipeRequest>("application/json")
+.Produces<CreateRecipeResponse>(201)
+.ProducesProblem(500);
 
 app.Run();

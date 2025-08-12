@@ -1,96 +1,148 @@
-# RecipeAppApi
+# Recipe API
 
-A modern .NET 8 recipe management API built with Clean Architecture principles and designed to run on AWS Lambda.
+This is the Recipe Lambda function that provides recipe management capabilities.
 
-## Architecture
+## API Endpoints
 
-This project follows Clean Architecture principles with the following structure:
+### Create Recipe
 
+**POST** `/recipes`
+
+Creates a new recipe with ingredients and steps.
+
+#### Request Body
+
+```json
+{
+  "title": "Spaghetti Carbonara",
+  "description": "A classic Italian pasta dish with eggs, cheese, and pancetta",
+  "category": "Italian",
+  "photoUrl": "https://example.com/carbonara.jpg",
+  "isFavorite": false,
+  "ingredients": [
+    {
+      "name": "Spaghetti",
+      "quantity": "400",
+      "unit": "g"
+    },
+    {
+      "name": "Eggs",
+      "quantity": "4",
+      "unit": "large"
+    },
+    {
+      "name": "Pecorino Romano",
+      "quantity": "100",
+      "unit": "g"
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "instructionText": "Bring a large pot of salted water to boil and cook spaghetti according to package directions"
+    },
+    {
+      "stepNumber": 2,
+      "instructionText": "In a large skillet, cook pancetta until crispy"
+    },
+    {
+      "stepNumber": 3,
+      "instructionText": "Beat eggs and cheese in a bowl, then toss with hot pasta and pancetta"
+    }
+  ]
+}
 ```
-src/
-├── BuildingBlocks/          # Cross-cutting concerns
-│   ├── Common/             # Shared utilities, Result pattern, Guards
-│   └── Observability/      # Logging, metrics, tracing
-├── Core/                   # Business logic
-│   ├── Domain/            # Entities, value objects, domain events
-│   └── Application/       # Use cases, ports, DTOs, validators
-├── Infrastructure/         # External concerns
-│   ├── Persistence/       # Database access, repositories
-│   └── Messaging/         # Message queues, event publishing
-└── Lambdas/               # AWS Lambda functions
-    ├── Recipe/            # Main API Lambda
-    └── Authorizer/        # Custom Lambda Authorizer
+
+#### Response
+
+**Status:** 201 Created
+
+```json
+{
+  "id": "12345678-1234-1234-1234-123456789012",
+  "title": "Spaghetti Carbonara",
+  "description": "A classic Italian pasta dish with eggs, cheese, and pancetta",
+  "category": "Italian",
+  "photoUrl": "https://example.com/carbonara.jpg",
+  "isFavorite": false,
+  "createdAt": "2024-01-15T10:30:00Z",
+  "createdByUserId": "11111111-1111-1111-1111-111111111111",
+  "ingredients": [
+    {
+      "id": "87654321-4321-4321-4321-210987654321",
+      "name": "Spaghetti",
+      "quantity": "400",
+      "unit": "g"
+    }
+  ],
+  "steps": [
+    {
+      "id": "11223344-3322-3322-3322-443322112233",
+      "stepNumber": 1,
+      "instructionText": "Bring a large pot of salted water to boil and cook spaghetti according to package directions"
+    }
+  ]
+}
 ```
 
-## Prerequisites
+#### Validation
 
-- .NET 8.0 SDK
-- AWS CLI (for deployment)
-- AWS SAM CLI (for local testing)
+- `title`: Required, max 200 characters
+- `description`: Required, max 1000 characters
+- `category`: Required, max 100 characters
+- `photoUrl`: Optional, max 500 characters
+- `ingredients`: Required, must contain at least one ingredient
+- `steps`: Required, must contain at least one step
+- Each ingredient must have `name`, `quantity`, and `unit` (all required)
+- Each step must have `stepNumber` and `instructionText` (both required)
 
-## Getting Started
+### Get Recipes
 
-### Build the Solution
+**GET** `/recipes`
+
+Returns a list of recipe names.
+
+### Get Welcome
+
+**GET** `/welcome`
+
+Returns a welcome message from the recipe service.
+
+## Development
+
+### Running Locally
 
 ```bash
-dotnet restore
+dotnet run
+```
+
+The API will be available at `http://localhost:5000` with Swagger documentation at `/swagger`.
+
+### Building
+
+```bash
 dotnet build
 ```
 
-### Run Tests
+### Testing
 
 ```bash
 dotnet test
 ```
 
-### Local Development
+## Architecture
 
-```bash
-cd src/Lambdas/Recipe
-dotnet run
-```
+This Lambda function follows a clean architecture pattern:
 
-### Deploy to AWS
+- **DTOs**: Data transfer objects for API requests and responses
+- **Services**: Business logic layer
+- **Domain Entities**: Core business entities (Recipe, Ingredient, Step)
+- **Infrastructure**: Database context and persistence layer
 
-```bash
-cd src/IaC/sam
-sam build
-sam deploy --config-env dev
-```
+## Dependencies
 
-## Project Structure
-
-- **BuildingBlocks.Common**: Shared utilities, Result pattern, Guards, Exceptions
-- **BuildingBlocks.Observability**: Serilog configuration, metrics, tracing
-- **Core.Domain**: Recipe entities, value objects, domain events
-- **Core.Application**: Use cases, ports, DTOs, validators
-- **Infrastructure.Persistence**: Entity Framework Core, MySQL repositories
-- **Infrastructure.Messaging**: SQS/SNS publishers and consumers
-- **Lambdas.Recipe**: ASP.NET Core Minimal API hosted on Lambda
-- **Lambdas.Authorizer**: Custom Lambda Authorizer for HTTP API
-
-## Development Guidelines
-
-- Follow C# coding conventions
-- Use async/await for I/O operations
-- Implement proper error handling and logging
-- Write unit tests for business logic
-- Use dependency injection for loose coupling
-
-## CI/CD
-
-The project includes GitHub Actions workflows for:
-- Building and testing on push/PR
-- Automatic deployment to dev environment
-- AWS SAM deployment
-
-## Contributing
-
-1. Create a feature branch from `develop`
-2. Make your changes following the coding standards
-3. Add tests for new functionality
-4. Submit a pull request
-
-## License
-
-Copyright (c) RecipeAppApi. All rights reserved.
+- ASP.NET Core 8.0
+- Entity Framework Core
+- AWS Lambda hosting
+- Serilog for structured logging
+- Swagger/OpenAPI for documentation
